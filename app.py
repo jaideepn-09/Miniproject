@@ -1,81 +1,287 @@
 import streamlit as st
 import mysql.connector
-from home import display_observations, insert_observation, delete_observation, update_observation_location
+
+from database import establish_connection
+from home import display_observations, insert_observation, delete_observation, update_observation_location, \
+    display_species, insert_species, delete_species, update_species, display_cons, insert_cons, delete_cons, \
+    update_cons, display_Habitats, insert_Habitats, search_species, delete_Habitats, update_Habitats, display_data, \
+    insert_data, delete_data, update_data
+
 # MySQL connection configuration
 db = mysql.connector.connect(
     host="localhost",
-    user="root",
-    password="Admiraljai_69",
-    database="miniproject"
+    user="",
+    password="",
+    database=""
 )
 cursor = db.cursor()
+# import base64
+#
+# with open("1.jpg", "rb") as image_file:
+#     encoded_string = base64.b64encode(image_file.read()).decode()
+#
+# # Construct the CSS with the base64 encoded image and animation
+# bg_img = f'''
+# <style>
+#     [data-testid="stAppViewContainer"] {{
+#         background-image: url('data:image/jpeg;base64,{encoded_string}');
+#         background-size: cover;
+#         background-repeat: no-repeat;
+#         position: relative;
+#         animation: moveBackground 50s linear infinite;
+#     }}
+#
+#     @keyframes moveBackground {{
+#         0% {{
+#             background-position: 0% 0%;
+#         }}
+#         50% {{
+#             background-position: 100% 100%;
+#         }}
+#         100% {{
+#             background-position: 0% 0%;
+#         }}
+#     }}
+#
+#     @media (max-width: 768px) {{
+#         [data-testid="stAppViewContainer"] {{
+#             background-size: contain;
+#         }}
+#     }}
+#
+#     h1 {{
+#     color: #000000;
+#     text-align: center;
+#     font-size: 45px;
+#     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Border color with shadow effect */
+#     backdrop-filter: blur(2px); /* Apply blur effect */
+#     }}
+#
+#     /* Subheader */
+#     h2 {{
+#         color: #000000; /* Black text color */
+#         text-align: center;
+#         font-size: 45px;
+#         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Border color with shadow effect */
+#         backdrop-filter: blur(2px); /* Apply blur effect */
+#     }}
+#
+#     /* Text */
+#     p {{
+#     color: #ffffff; /* Black text color */
+#     font-weight: bold; /* Set text to bold */
+#     backdrop-filter: blur(5px); /* Apply blur effect */
+#     text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000; /* Black border around the text */
+#     }}
+#
+#
+#     /* Text input fields */
+#     .stTextInput>div>div>input {{
+#         color: #ffffff; /* Black text color */
+#         background-color: rgba(0,0,0, 0.8); /* White background with 80% opacity */
+#         border-radius: 5px; /* Rounded corners */
+#     }}
+#
+#     /* Buttons */
+#     .stButton>button {{
+#         color: #000000; /* White text color */
+#         background-color: #4CAF50; /* Green button color */
+#         border: none; /* No border */
+#         border-radius: 5px; /* Rounded corners */
+#         padding: 10px 20px; /* Padding */
+#         cursor: pointer; /* Cursor style */
+#     }}
+#
+#     /* Error messages */
+#     .stAlert>div>div>div>div {{
+#         color: #000000; /* White text color */
+#         background-color: #ff0000; /* Red background color */
+#         border-radius: 5px; /* Rounded corners */
+#         padding: 10px; /* Padding */
+#     }}
+#
+#     /* Select boxes */
+#     .stSelectbox>div>div>select {{
+#         color: #000000; /* Black text color */
+#         background-color: rgba(255, 255, 255, 0.8); /* White background with 80% opacity */
+#         border-radius: 5px; /* Rounded corners */
+#     }}
+#
+#     /* Sidebar */
+#     .stSidebar {{
+#         background-color: rgba(0, 0, 0, 0.5); /* Black background with 50% opacity */
+#         padding: 20px; /* Padding */
+#         border-radius: 10px; /* Rounded corners */
+#     }}
+#
+#     /* Sidebar title */
+#     .stSidebar>div>h1 {{
+#         color: #000000; /* White text color */
+#         text-align: center;
+#     }}
+# </style>
+# '''
+#
+# # Display the CSS in your Streamlit app
+# st.markdown(bg_img, unsafe_allow_html=True)
 
 # Function to handle management/department login
-def login():
-    st.title("Management/Department Login")
-    login_identifier = st.text_input("Username or Email")
-    password = st.text_input("Password", type="password")
+def login(cursor):
+    with st.expander("Login", expanded=True):
+        login_identifier = st.text_input("Username or Email 📧")
+        password = st.text_input("Password 🔒", type="password")
 
-    if st.button("Login"):
-        # Validate login credentials against database
-        cursor.execute("SELECT * FROM ManagementUsers WHERE (username = %s OR email = %s) AND password = %s",
-                       (login_identifier, login_identifier, password))
-        user = cursor.fetchone()
-        if user:
-            st.success("Logged in successfully!")
-            st.session_state["logged_in"] = True
-            st.experimental_rerun()
-        else:
-            st.error("Invalid username/email or password")
+        if st.button("Login", key='login'):
+            if not login_identifier or not password:
+                st.error("Please enter both username/email and password.")
+                return False
 
-# Function to handle management/department signup
-def signup():
-    st.title("Management/Department Sign Up")
-    new_username = st.text_input("New Username")
-    new_email = st.text_input("New Email")
-    new_password = st.text_input("New Password", type="password")
-    department = st.selectbox("Select Department", ["Operations", "Conservation"])
+            cursor.execute(
+                "SELECT * FROM ManagementUsers WHERE (BINARY username = %s OR BINARY email = %s) AND BINARY password = %s",
+                (login_identifier, login_identifier, password))
+            user = cursor.fetchone()
+            if user:
+                st.success("Logged in successfully! 🎉")
+                st.session_state["logged_in"] = True
+                st.experimental_rerun()
+                return True
+            else:
+                st.error("Invalid username/email or password ❌")
+                return False
+    return False
 
-    if st.button("Sign Up"):
-        # Check if username or email already exists
-        cursor.execute("SELECT * FROM ManagementUsers WHERE username = %s OR email = %s", (new_username, new_email))
-        existing_user = cursor.fetchone()
-        if existing_user:
-            st.error("Username or email already exists. Please choose a different username or email.")
-        else:
-            # Insert new user into database
-            cursor.execute("INSERT INTO ManagementUsers (username, email, password, department) VALUES (%s, %s, %s, %s)",
-                           (new_username, new_email, new_password, department))
-            db.commit()
-            st.success("Sign up successful! You can now login.")
+def signup(cursor):
+    with st.expander("Sign Up", expanded=True):
+        new_username = st.text_input("New Username 🆕")
+        new_email = st.text_input("New Email 📧")
+        new_password = st.text_input("New Password 🔒", type="password")
+        department = st.selectbox("Select Department", ["Operations", "Conservation"])
 
-# Function to display home page with dashboard
+        if st.button("Sign Up", key='signup'):
+            cursor.execute("SELECT * FROM ManagementUsers WHERE BINARY username = %s OR BINARY email = %s",
+                           (new_username, new_email))
+            existing_user = cursor.fetchone()
+            if existing_user:
+                st.error("Username or email already exists. Please choose a different username or email. ❌")
+            else:
+                cursor.execute(
+                    "INSERT INTO ManagementUsers (username, email, password, department) VALUES (%s, %s, %s, %s)",
+                    (new_username, new_email, new_password, department))
+                db.commit()
+                st.success("Sign up successful! You can now login. ✅")
+
 def home_page():
-    st.title("Home Page")
-    st.write("Welcome to the home page!!")
-
-    st.subheader("Dashboard")
-    dashboard_option = st.radio("Select an option:",
-                                ["Species", "Conservation Project Status", "Habitats Info", "Observation"])
-
-    if dashboard_option == "Species":
+    print()
+    st.subheader("Welcome to the home page!!")
+    with st.expander("Dashboard Options"):
+        dashboard_option = st.selectbox("",["Home","Species", "Conservation Project", "Wildlife preserve Info", "Observation", "Environmental_data"])
+    if dashboard_option == "":
+        st.write("Welcome!!!")
+    elif dashboard_option == "Species":
         st.write("Different Species")
+        menu = st.sidebar.radio("Menu", ["Display Species", "Insert Species", "Delete Species",
+                                         "Update Species"])
+        if menu == "Display Species":
+            display_species(cursor)
+            search_query = st.text_input("Search by species name or ID:")
+            if st.button("Search"):
+                species_data = search_species(cursor, search_query)
 
-    elif dashboard_option == "Conservation Project Status":
-        st.write("Conservation Project Status option selected")
+                if species_data:
+                    st.write("### Search Results:")
+                    for species in species_data:
+                        st.write(f"Species ID: {species[0]}, Species Name: {species[1]}, Classification: {species[2]}")
+                else:
+                    st.write("No species found matching the search query.")
+        elif menu == "Insert Species":
+            insert_species(db, cursor)
+        elif menu == "Delete Species":
+            delete_species(db, cursor)
+        elif menu == "Update Species":
+            update_species(db, cursor)
 
-    elif dashboard_option == "Habitats Info":
-        st.write("Habitats Info option selected")
+        cursor.close()
+        db.close()
+        pass
+    elif dashboard_option == "Conservation Project":
+        st.write("Conservation Project Status")
+        search_query = st.text_input("Search by Project ID or Name:")
+        if st.button("Search"):
+            if search_query.isdigit():
+                query = "SELECT * FROM CONSERVATION_PLAN WHERE PROJ_ID = %s"
+                cursor.execute(query, (int(search_query),))
+            else:
+                query = "SELECT * FROM CONSERVATION_PLAN WHERE PROJ_NAME LIKE %s"
+                cursor.execute(query, ('%' + search_query + '%',))
+            conservation_projects_data = cursor.fetchall()
 
+            if conservation_projects_data:
+                st.write("### Search Results:")
+                for project in conservation_projects_data:
+                    st.write(f"Project ID: {project[0]}, Project Name: {project[1]}")
+            else:
+                st.write("No conservation projects found matching the search query.")
+
+        menu = st.sidebar.radio("Menu", ["Display Conservation Project", "Insert Conservation Project",
+                                         "Delete Conservation Project",
+                                         "Update Conservation Project"])
+
+        if menu == "Display Conservation Project":
+            display_cons(cursor)
+        elif menu == "Insert Conservation Project":
+            insert_cons(db, cursor)
+        elif menu == "Delete Conservation Project":
+            delete_cons(db, cursor)
+        elif menu == "Update Conservation Project":
+            update_cons(db, cursor)
+
+        cursor.close()
+        db.close()
+
+    elif dashboard_option == "Wildlife preserve Info":
+        st.write("Wildlife preserve Info ")
+        search_query = st.text_input("Search by Wildlife Preserve name or ID:")
+        if st.button("Search"):
+            species_data = search_species(cursor, search_query)
+
+            if species_data:
+                st.write("### Search Results:")
+                for species in species_data:
+                    st.write(f"Species_preserve ID: {species[0]}, Species_preserve Name: {species[1]}")
+            else:
+                st.write("No Wildlife Preserves found matching the search query.")
+        menu = st.sidebar.radio("Menu", ["Display Wildlife preserve", "Insert Wildlife preserve","Delete Wildlife preserve","Update Wildlife preserve"])
+        if menu == "Display Wildlife preserve":
+            display_Habitats(cursor)
+        elif menu == "Insert Wildlife preserve":
+            insert_Habitats(db, cursor)
+        elif menu == 'Delete Wildlife preserve':
+            delete_Habitats(db,cursor)
+        elif menu == "Update Wildlife preserve":
+            update_Habitats(db,cursor)
+        cursor.close()
+        db.close()
     elif dashboard_option == "Observation":
-        st.write("Observation option selected")
-
         st.title("Observations Management System")
+        search_query = st.text_input("Search by Observation ID or Location:")
+        if st.button("Search"):
+            if search_query.isdigit():
+                query = "SELECT * FROM OBSERVATIONS WHERE OB_ID = %s"
+                cursor.execute(query, (int(search_query),))
+            else:
+                query = "SELECT * FROM OBSERVATIONS WHERE OB_LOC LIKE %s"
+                cursor.execute(query, ('%' + search_query + '%',))
+            observations_data = cursor.fetchall()
 
+            if observations_data:
+                st.write("### Search Results:")
+                for observation in observations_data:
+                    st.write(f"Observation ID: {observation[0]}, Observation Location: {observation[1]}")
+            else:
+                st.write("No observations found matching the search query.")
 
         menu = st.sidebar.radio("Menu", ["Display Observations", "Insert Observation", "Delete Observation",
-                                 "Update Observation Location"])
-
+                                         "Update Observation Location"])
         if menu == "Display Observations":
             display_observations(cursor)
         elif menu == "Insert Observation":
@@ -88,26 +294,60 @@ def home_page():
         cursor.close()
         db.close()
 
-    if st.button("Logout"):
-        st.session_state["logged_in"] = False
-        st.experimental_rerun()
+    elif dashboard_option == ("Environmental_data"):
+        st.title("Environmental Data")
+        search_query = st.text_input("Search by Data ID or Water Quality:")
+        if st.button("Search"):
+            if search_query.isdigit():
+                query = "SELECT * FROM ENVIRONMENTAL_DATA WHERE D_ID = %s"
+                cursor.execute(query, (int(search_query),))
+            else:
+                query = "SELECT * FROM ENVIRONMENTAL_DATA WHERE WATER_QUAL LIKE %s"
+                cursor.execute(query, ('%' + search_query + '%',))
+            environmental_data = cursor.fetchall()
+
+            if environmental_data:
+                st.write("### Search Results:")
+                for data in environmental_data:
+                    st.write(f"Data ID: {data[0]}, Water Quality: {data[1]}")
+            else:
+                st.write("No environmental data found matching the search query.")
+        menu = st.sidebar.radio("Menu",["Display Environmental Data", "Insert Environmental Data", "Delete Environmental Data",
+                                  "Update Environmental Data"])
+
+        if menu == "Display Environmental Data":
+            display_data(cursor)
+        elif menu == "Insert Environmental Data":
+            insert_data(db, cursor)
+        elif menu == "Delete Environmental Data":
+            delete_data(db, cursor)
+        elif menu == "Update Environmental Data":
+            update_data(db, cursor)
+
+        cursor.close()
+        db.close()
+
 
 def main():
     st.title("National Park Management System")
 
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
-
     if st.session_state["logged_in"]:
-        home_page()
-
+        if st.button('Logout', key='logout'):
+            st.session_state["logged_in"] = False
+            st.experimental_rerun()
+        st.write("You are logged in!")  # Add a debug statement to check if this is executed
+        home_page()  # Check if home page content is called when logged in
     else:
         action = st.radio("Choose an option:", ["Login", "Sign Up"])
 
         if action == "Login":
-            login()
+            if login(cursor):
+                st.write("Login successful!")
+                home_page()
         elif action == "Sign Up":
-            signup()
+            signup(cursor)
 
 if __name__ == "__main__":
     main()

@@ -7,3 +7,4 @@ def establish_connection():
         password="",
         database=""
     )
+
