@@ -42,6 +42,64 @@ def homepage(db):
 
     elif dashboard_option == "Observation":
         st.write("Observation option selected")
+
+# def search_all(cursor, search_query):
+#     # Search in OBSERVATIONS table
+#     query = "SELECT * FROM OBSERVATIONS WHERE OB_ID = %s OR OB_LOC LIKE %s"
+#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
+#     observation_data = cursor.fetchall()
+#
+#     # Search in SPECIES table
+#     query = "SELECT * FROM SPECIES WHERE SP_ID = %s OR SP_NAME LIKE %s OR SP_CLASSIFICATION LIKE %s"
+#     cursor.execute(query, (int(search_query), '%' + search_query + '%', '%' + search_query + '%'))
+#     species_data = cursor.fetchall()
+#
+#     # Search in CONSERVATION_PLAN table
+#     query = "SELECT * FROM CONSERVATION_PLAN WHERE PROJ_ID = %s OR PROJ_NAME LIKE %s"
+#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
+#     conservation_projects_data = cursor.fetchall()
+#
+#     # Search in HABITATS table
+#     query = "SELECT * FROM SPECIES_PRESERVES WHERE PID = %s OR PNAME LIKE %s"
+#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
+#     habitat_data = cursor.fetchall()
+#
+#     # Search in ENVIRONMENTAL_DATA table
+#     query = "SELECT * FROM ENVIRONMENTAL_DATA WHERE D_ID = %s OR WATER_QUAL LIKE %s"
+#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
+#     environmental_data = cursor.fetchall()
+#
+#     # Search in PROTECTED_BY table
+#     query = "SELECT * FROM PROTECTED_BY WHERE SP_ID = %s OR CONSERVATION_STATUS LIKE %s"
+#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
+#     protected_data = cursor.fetchall()
+#
+#     # Combine all search results
+#     all_results = {
+#         "Observations": observation_data,
+#         "Species": species_data,
+#         "Conservation Projects": conservation_projects_data,
+#         "Habitats": habitat_data,
+#         "Environmental Data": environmental_data,
+#         "Protected Data": protected_data
+#     }
+#
+#     return all_results
+#
+#
+# def search_across_all(cursor):
+#     search_query = st.text_input("Search across all data:")
+#     if st.button("Search"):
+#         search_results = search_all(cursor, search_query)
+#
+#         for table_name, data in search_results.items():
+#             if data:
+#                 st.write(f"### Search Results in {table_name}:")
+#                 for row in data:
+#                     st.write(row)
+#             else:
+#                 st.write(f"No results found in {table_name}.")
+
 def display_species(cursor):
             st.title("Display Species")
             query = "SELECT * FROM SPECIES"
@@ -409,6 +467,68 @@ def update_data(db, cursor):
             st.success("Environmental data updated successfully!")
         except Exception as e:
             st.error(f"Failed to update environmental data: {e}")
+            db.rollback()
+def insert_protected_by(db, cursor):
+    st.title("Insert Protected By")
+    conservation_status = st.text_input("Conservation Status")
+    sp_id = st.text_input("Species ID")
+    proj_id = st.text_input("Project ID")
+
+    if st.button("Submit"):
+        query = "INSERT INTO PROTECTED_BY (CONSERVATION_STATUS, SP_ID, PROJ_ID) VALUES (%s, %s, %s)"
+        values = (conservation_status, sp_id, proj_id)
+        try:
+            cursor.execute(query, values)
+            db.commit()
+            st.success("Data inserted into PROTECTED_BY table successfully!")
+        except Exception as e:
+            st.error(f"Failed to insert data into PROTECTED_BY table: {e}")
+            db.rollback()
+def display_protected_by(cursor):
+    st.title("Display Protected By")
+    query = "SELECT * FROM PROTECTED_BY"
+    cursor.execute(query)
+    protected_data = cursor.fetchall()
+
+    if protected_data:
+        st.write("### Protected By Data")
+        for data in protected_data:
+            st.write(f"Species ID: {data[1]}, Conservation Status: {data[0]}, Project ID: {data[2]}")
+    else:
+        st.write("No protected data found.")
+
+def insert_protected_by(db, cursor):
+    st.title("Insert Protected By")
+    conservation_status = st.text_input("Conservation Status")
+    sp_id = st.text_input("Species ID")
+    proj_id = st.text_input("Project ID")
+
+    if st.button("Submit"):
+        query = "INSERT INTO PROTECTED_BY (CONSERVATION_STATUS, SP_ID, PROJ_ID) VALUES (%s, %s, %s)"
+        values = (conservation_status, sp_id, proj_id)
+        try:
+            cursor.execute(query, values)
+            db.commit()
+            st.success("Data inserted into PROTECTED_BY table successfully!")
+        except Exception as e:
+            st.error(f"Failed to insert data into PROTECTED_BY table: {e}")
+            db.rollback()
+
+def delete_protected_by(db, cursor):
+    st.title("Delete Protected By")
+    sp_id = st.text_input("Enter Species ID to delete")
+
+    if st.button("Delete"):
+        query = "DELETE FROM PROTECTED_BY WHERE SP_ID = %s"
+        try:
+            cursor.execute(query, (sp_id,))
+            db.commit()
+            if cursor.rowcount > 0:
+                st.success("Data deleted from PROTECTED_BY table successfully!")
+            else:
+                st.warning("Data with provided Species ID not found in PROTECTED_BY table.")
+        except Exception as e:
+            st.error(f"Failed to delete data from PROTECTED_BY table: {e}")
             db.rollback()
 
 if __name__ == "__main__":

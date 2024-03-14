@@ -5,16 +5,27 @@ from database import establish_connection
 from home import display_observations, insert_observation, delete_observation, update_observation_location, \
     display_species, insert_species, delete_species, update_species, display_cons, insert_cons, delete_cons, \
     update_cons, display_Habitats, insert_Habitats, search_species, delete_Habitats, update_Habitats, display_data, \
-    insert_data, delete_data, update_data
+    insert_data, delete_data, update_data, display_protected_by, insert_protected_by, delete_protected_by
 
 # MySQL connection configuration
 db = mysql.connector.connect(
     host="localhost",
-    user="",
-    password="",
-    database=""
+    user="root",
+    password="Admiraljai_69",
+    database="park"
 )
 cursor = db.cursor()
+
+# def UpdateProtectedByStatus():
+#     cursor.callproc("UpdateProtectedByStatus")
+#     data = cursor.stored_results()
+#     response = []
+#     for d in data:
+#         res = d.fetchall()
+#         response.extend(res)
+#     print(response)
+#
+# UpdateProtectedByStatus()
 # import base64
 #
 # with open("1.jpg", "rb") as image_file:
@@ -173,26 +184,35 @@ def signup(cursor):
 def home_page():
     print()
     st.subheader("Welcome to the home page!!")
+    # search_query = st.text_input("Search by species name, project name, wildlife preserve name, observation location, or data ID:")
+    # if st.button("Search"):
+    #     search_result = search_all(cursor, search_query)
+    #     if search_result:
+    #         st.write("### Search Results:")
+    #         for result in search_result:
+    #             st.write(result)
+    #     else:
+    #         st.write("No results found matching the search query.")
     with st.expander("Dashboard Options"):
-        dashboard_option = st.selectbox("",["Home","Species", "Conservation Project", "Wildlife preserve Info", "Observation", "Environmental_data"])
+        dashboard_option = st.selectbox("",["Home","Species", "Conservation Project", "Wildlife preserve Info", "Observation", "Environmental_data", "Protected By"])
     if dashboard_option == "":
         st.write("Welcome!!!")
     elif dashboard_option == "Species":
         st.write("Different Species")
+        search_query = st.text_input("Search by species name or ID:")
+        if st.button("Search"):
+            species_data = search_species(cursor, search_query)
+
+            if species_data:
+                st.write("### Search Results:")
+                for species in species_data:
+                    st.write(f"Species ID: {species[0]}, Species Name: {species[1]}, Classification: {species[2]}")
+            else:
+                st.write("No species found matching the search query.")
         menu = st.sidebar.radio("Menu", ["Display Species", "Insert Species", "Delete Species",
                                          "Update Species"])
         if menu == "Display Species":
             display_species(cursor)
-            search_query = st.text_input("Search by species name or ID:")
-            if st.button("Search"):
-                species_data = search_species(cursor, search_query)
-
-                if species_data:
-                    st.write("### Search Results:")
-                    for species in species_data:
-                        st.write(f"Species ID: {species[0]}, Species Name: {species[1]}, Classification: {species[2]}")
-                else:
-                    st.write("No species found matching the search query.")
         elif menu == "Insert Species":
             insert_species(db, cursor)
         elif menu == "Delete Species":
@@ -296,7 +316,7 @@ def home_page():
 
     elif dashboard_option == ("Environmental_data"):
         st.title("Environmental Data")
-        search_query = st.text_input("Search by Data ID or Water Quality:")
+        search_query = st.text_input("Search by Data ID")
         if st.button("Search"):
             if search_query.isdigit():
                 query = "SELECT * FROM ENVIRONMENTAL_DATA WHERE D_ID = %s"
@@ -323,6 +343,36 @@ def home_page():
             delete_data(db, cursor)
         elif menu == "Update Environmental Data":
             update_data(db, cursor)
+
+        cursor.close()
+        db.close()
+    elif dashboard_option == "Protected By":
+        st.title("Protected By")
+        search_query = st.text_input("Search by Species ID or Conservation ID")
+        if st.button("Search"):
+            if search_query.isdigit():
+                query = "SELECT * FROM PROTECTED_BY WHERE SP_ID = %s"
+                cursor.execute(query, (int(search_query),))
+            else:
+                query = "SELECT * FROM PROTECTED_BY WHERE CONSERVATION_STATUS LIKE %s"
+                cursor.execute(query, ('%' + search_query + '%',))
+            protected_data = cursor.fetchall()
+
+            if protected_data:
+                st.write("### Search Results:")
+                for data in protected_data:
+                    st.write(f"Species ID: {data[1]}, Conservation Status: {data[0]}, Project ID: {data[2]}")
+            else:
+                st.write("No protected data found matching the search query.")
+
+        menu = st.sidebar.radio("Menu", ["Display Protected By", "Insert Protected By", "Delete Protected By"])
+
+        if menu == "Display Protected By":
+            display_protected_by(cursor)
+        elif menu == "Insert Protected By":
+            insert_protected_by(db, cursor)
+        elif menu == "Delete Protected By":
+            delete_protected_by(db, cursor)
 
         cursor.close()
         db.close()
