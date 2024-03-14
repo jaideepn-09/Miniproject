@@ -4,7 +4,7 @@ import mysql.connector
 from database import establish_connection
 from home import display_observations, insert_observation, delete_observation, update_observation_location, \
     display_species, insert_species, delete_species, update_species, display_cons, insert_cons, delete_cons, \
-    update_cons, display_Habitats, insert_Habitats, search_species, delete_Habitats, update_Habitats, display_data, \
+     display_Habitats, insert_Habitats, search_species, delete_Habitats, update_Habitats, display_data, \
     insert_data, delete_data, update_data, display_protected_by, insert_protected_by, delete_protected_by
 
 # MySQL connection configuration
@@ -16,126 +16,25 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor()
 
-# def UpdateProtectedByStatus():
-#     cursor.callproc("UpdateProtectedByStatus")
-#     data = cursor.stored_results()
-#     response = []
-#     for d in data:
-#         res = d.fetchall()
-#         response.extend(res)
-#     print(response)
-#
-# UpdateProtectedByStatus()
-# import base64
-#
-# with open("1.jpg", "rb") as image_file:
-#     encoded_string = base64.b64encode(image_file.read()).decode()
-#
-# # Construct the CSS with the base64 encoded image and animation
-# bg_img = f'''
-# <style>
-#     [data-testid="stAppViewContainer"] {{
-#         background-image: url('data:image/jpeg;base64,{encoded_string}');
-#         background-size: cover;
-#         background-repeat: no-repeat;
-#         position: relative;
-#         animation: moveBackground 50s linear infinite;
-#     }}
-#
-#     @keyframes moveBackground {{
-#         0% {{
-#             background-position: 0% 0%;
-#         }}
-#         50% {{
-#             background-position: 100% 100%;
-#         }}
-#         100% {{
-#             background-position: 0% 0%;
-#         }}
-#     }}
-#
-#     @media (max-width: 768px) {{
-#         [data-testid="stAppViewContainer"] {{
-#             background-size: contain;
-#         }}
-#     }}
-#
-#     h1 {{
-#     color: #000000;
-#     text-align: center;
-#     font-size: 45px;
-#     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Border color with shadow effect */
-#     backdrop-filter: blur(2px); /* Apply blur effect */
-#     }}
-#
-#     /* Subheader */
-#     h2 {{
-#         color: #000000; /* Black text color */
-#         text-align: center;
-#         font-size: 45px;
-#         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Border color with shadow effect */
-#         backdrop-filter: blur(2px); /* Apply blur effect */
-#     }}
-#
-#     /* Text */
-#     p {{
-#     color: #ffffff; /* Black text color */
-#     font-weight: bold; /* Set text to bold */
-#     backdrop-filter: blur(5px); /* Apply blur effect */
-#     text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000; /* Black border around the text */
-#     }}
-#
-#
-#     /* Text input fields */
-#     .stTextInput>div>div>input {{
-#         color: #ffffff; /* Black text color */
-#         background-color: rgba(0,0,0, 0.8); /* White background with 80% opacity */
-#         border-radius: 5px; /* Rounded corners */
-#     }}
-#
-#     /* Buttons */
-#     .stButton>button {{
-#         color: #000000; /* White text color */
-#         background-color: #4CAF50; /* Green button color */
-#         border: none; /* No border */
-#         border-radius: 5px; /* Rounded corners */
-#         padding: 10px 20px; /* Padding */
-#         cursor: pointer; /* Cursor style */
-#     }}
-#
-#     /* Error messages */
-#     .stAlert>div>div>div>div {{
-#         color: #000000; /* White text color */
-#         background-color: #ff0000; /* Red background color */
-#         border-radius: 5px; /* Rounded corners */
-#         padding: 10px; /* Padding */
-#     }}
-#
-#     /* Select boxes */
-#     .stSelectbox>div>div>select {{
-#         color: #000000; /* Black text color */
-#         background-color: rgba(255, 255, 255, 0.8); /* White background with 80% opacity */
-#         border-radius: 5px; /* Rounded corners */
-#     }}
-#
-#     /* Sidebar */
-#     .stSidebar {{
-#         background-color: rgba(0, 0, 0, 0.5); /* Black background with 50% opacity */
-#         padding: 20px; /* Padding */
-#         border-radius: 10px; /* Rounded corners */
-#     }}
-#
-#     /* Sidebar title */
-#     .stSidebar>div>h1 {{
-#         color: #000000; /* White text color */
-#         text-align: center;
-#     }}
-# </style>
-# '''
-#
-# # Display the CSS in your Streamlit app
-# st.markdown(bg_img, unsafe_allow_html=True)
+def update_protected_by_status(cursor):
+    cursor.callproc("UpdateProtectedByStatus")
 
+def update_cons(db, cursor):
+    st.title("Update End_date")
+    proj_id = st.text_input("Enter proj ID to update")
+    end_date = st.date_input("Enter the deadline")
+
+    if st.button("Update"):
+        query = "UPDATE conservation_plan SET END_DATE = %s WHERE PROJ_ID = %s"
+        try:
+            cursor.execute(query, (end_date.strftime('%Y-%m-%d'), proj_id))
+            db.commit()
+            # Update conservation status in PROTECTED_BY table
+            update_protected_by_status(cursor)
+            st.success("New deadline updated successfully!")
+        except Exception as e:
+            st.error(f"Failed to update new deadline: {e}")
+            db.rollback()
 # Function to handle management/department login
 def login(cursor):
     with st.expander("Login", expanded=True):
@@ -225,22 +124,6 @@ def home_page():
         pass
     elif dashboard_option == "Conservation Project":
         st.write("Conservation Project Status")
-        search_query = st.text_input("Search by Project ID or Name:")
-        if st.button("Search"):
-            if search_query.isdigit():
-                query = "SELECT * FROM CONSERVATION_PLAN WHERE PROJ_ID = %s"
-                cursor.execute(query, (int(search_query),))
-            else:
-                query = "SELECT * FROM CONSERVATION_PLAN WHERE PROJ_NAME LIKE %s"
-                cursor.execute(query, ('%' + search_query + '%',))
-            conservation_projects_data = cursor.fetchall()
-
-            if conservation_projects_data:
-                st.write("### Search Results:")
-                for project in conservation_projects_data:
-                    st.write(f"Project ID: {project[0]}, Project Name: {project[1]}")
-            else:
-                st.write("No conservation projects found matching the search query.")
 
         menu = st.sidebar.radio("Menu", ["Display Conservation Project", "Insert Conservation Project",
                                          "Delete Conservation Project",
@@ -250,6 +133,8 @@ def home_page():
             display_cons(cursor)
         elif menu == "Insert Conservation Project":
             insert_cons(db, cursor)
+            update_protected_by_status(cursor)  # Update conservation status in PROTECTED_BY table
+            st.success("Conservation project inserted successfully!")
         elif menu == "Delete Conservation Project":
             delete_cons(db, cursor)
         elif menu == "Update Conservation Project":

@@ -1,4 +1,5 @@
 import streamlit as st
+
 from database import establish_connection
 from datetime import datetime, timedelta
 
@@ -304,22 +305,10 @@ def delete_cons(db, cursor):
             st.error(f"Failed to delete Project: {e}")
             db.rollback()
 
+# Example usage:
+# update_cons(db_connection, db_cursor)
 
 
-def update_cons(db, cursor):
-    st.title("Update End_date")
-    proj_id = st.text_input("Enter proj ID to update")
-    new_date = st.date_input("Enter the deadline")
-
-    if st.button("Update"):
-        query = "UPDATE conservation_plan SET PROJ_NAME = %s WHERE PROJ_ID = %s"
-        try:
-            cursor.execute(query, (new_date, proj_id))
-            db.commit()
-            st.success("New deadline updated successfully!")
-        except Exception as e:
-            st.error(f"Failed to update new deadline: {e}")
-            db.rollback()
 def display_observations(cursor):
     st.title("Display Observations")
     query = "SELECT * FROM OBSERVATIONS"
