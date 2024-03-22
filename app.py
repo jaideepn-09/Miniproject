@@ -4,10 +4,11 @@ import mysql.connector
 from database import establish_connection
 from home import display_observations, insert_observation, delete_observation, update_observation_location, \
     display_species, insert_species, delete_species, update_species, display_cons, insert_cons, delete_cons, \
-     display_Habitats, insert_Habitats, search_species, delete_Habitats, update_Habitats, display_data, \
-    insert_data, delete_data, update_data, display_protected_by, insert_protected_by, delete_protected_by
+    display_Habitats, insert_Habitats, delete_Habitats, update_Habitats, display_data, \
+    insert_data, delete_data, update_data, display_protected_by, \
+    search_species, search_habitats, search_cons, search_observation, search_Environmental_data, search_protected, \
+    update_cons \
 
-# MySQL connection configuration
 db = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -16,26 +17,18 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor()
 
-def update_protected_by_status(cursor):
-    cursor.callproc("UpdateProtectedByStatus")
-
-def update_cons(db, cursor):
-    st.title("Update End_date")
-    proj_id = st.text_input("Enter proj ID to update")
-    end_date = st.date_input("Enter the deadline")
-
-    if st.button("Update"):
-        query = "UPDATE conservation_plan SET END_DATE = %s WHERE PROJ_ID = %s"
-        try:
-            cursor.execute(query, (end_date.strftime('%Y-%m-%d'), proj_id))
-            db.commit()
-            # Update conservation status in PROTECTED_BY table
-            update_protected_by_status(cursor)
-            st.success("New deadline updated successfully!")
-        except Exception as e:
-            st.error(f"Failed to update new deadline: {e}")
-            db.rollback()
-# Function to handle management/department login
+def set_bg_hack_url():
+    st.markdown(
+        f"""
+         <style>
+         .stApp {{
+             background: url("https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.wwf.fr%2Fvous-informer%2Feffet-panda%2Fune-nouvelle-arme-au-service-de-la-nature&psig=AOvVaw2jM7Pj_eGa-gaRTmUS4pHq&ust=1711184995337000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCKj44IHDh4UDFQAAAAAdAAAAABAJ");
+             background-size: cover
+         }}
+         </style>
+         """,
+        unsafe_allow_html=True
+    )
 def login(cursor):
     with st.expander("Login", expanded=True):
         login_identifier = st.text_input("Username or Email 📧")
@@ -83,31 +76,22 @@ def signup(cursor):
 def home_page():
     print()
     st.subheader("Welcome to the home page!!")
-    # search_query = st.text_input("Search by species name, project name, wildlife preserve name, observation location, or data ID:")
-    # if st.button("Search"):
-    #     search_result = search_all(cursor, search_query)
-    #     if search_result:
-    #         st.write("### Search Results:")
-    #         for result in search_result:
-    #             st.write(result)
-    #     else:
-    #         st.write("No results found matching the search query.")
     with st.expander("Dashboard Options"):
         dashboard_option = st.selectbox("",["Home","Species", "Conservation Project", "Wildlife preserve Info", "Observation", "Environmental_data", "Protected By"])
     if dashboard_option == "":
         st.write("Welcome!!!")
     elif dashboard_option == "Species":
         st.write("Different Species")
-        search_query = st.text_input("Search by species name or ID:")
+        search_query = st.text_input("Search by Species name or ID:")
         if st.button("Search"):
             species_data = search_species(cursor, search_query)
 
             if species_data:
                 st.write("### Search Results:")
                 for species in species_data:
-                    st.write(f"Species ID: {species[0]}, Species Name: {species[1]}, Classification: {species[2]}")
+                    st.write(f"Species_id: {species[0]}, Species_Name: {species[1]}, classification: {species[2]}")
             else:
-                st.write("No species found matching the search query.")
+                st.write("No Species found matching the search query.")
         menu = st.sidebar.radio("Menu", ["Display Species", "Insert Species", "Delete Species",
                                          "Update Species"])
         if menu == "Display Species":
@@ -124,7 +108,15 @@ def home_page():
         pass
     elif dashboard_option == "Conservation Project":
         st.write("Conservation Project Status")
-
+        search_query = st.text_input("Search by Conservation project name or ID:")
+        if st.button("Search"):
+            cons_data = search_cons(cursor, search_query)
+            if cons_data:
+                st.write("### Search Results:")
+                for cons in cons_data:
+                    st.write(f"Project ID: {cons[0]}, Project Name: {cons[1]}, Start date: {cons[2]}, End date: {cons[3]}, Species: {cons[4]}")
+            else:
+                st.write("No Species found matching the search query.")
         menu = st.sidebar.radio("Menu", ["Display Conservation Project", "Insert Conservation Project",
                                          "Delete Conservation Project",
                                          "Update Conservation Project"])
@@ -133,13 +125,10 @@ def home_page():
             display_cons(cursor)
         elif menu == "Insert Conservation Project":
             insert_cons(db, cursor)
-            update_protected_by_status(cursor)  # Update conservation status in PROTECTED_BY table
-            st.success("Conservation project inserted successfully!")
         elif menu == "Delete Conservation Project":
             delete_cons(db, cursor)
         elif menu == "Update Conservation Project":
             update_cons(db, cursor)
-
         cursor.close()
         db.close()
 
@@ -147,12 +136,11 @@ def home_page():
         st.write("Wildlife preserve Info ")
         search_query = st.text_input("Search by Wildlife Preserve name or ID:")
         if st.button("Search"):
-            species_data = search_species(cursor, search_query)
-
-            if species_data:
+            habitat_data = search_habitats(cursor, search_query)
+            if habitat_data:
                 st.write("### Search Results:")
-                for species in species_data:
-                    st.write(f"Species_preserve ID: {species[0]}, Species_preserve Name: {species[1]}")
+                for habitat in habitat_data:
+                    st.write(f"Species_preserve ID: {habitat[0]}, Species_preserve Name: {habitat[1]}, Species_id: {habitat[4]}")
             else:
                 st.write("No Wildlife Preserves found matching the search query.")
         menu = st.sidebar.radio("Menu", ["Display Wildlife preserve", "Insert Wildlife preserve","Delete Wildlife preserve","Update Wildlife preserve"])
@@ -168,22 +156,15 @@ def home_page():
         db.close()
     elif dashboard_option == "Observation":
         st.title("Observations Management System")
-        search_query = st.text_input("Search by Observation ID or Location:")
+        search_query = st.text_input("Search by Observation location or ID:")
         if st.button("Search"):
-            if search_query.isdigit():
-                query = "SELECT * FROM OBSERVATIONS WHERE OB_ID = %s"
-                cursor.execute(query, (int(search_query),))
-            else:
-                query = "SELECT * FROM OBSERVATIONS WHERE OB_LOC LIKE %s"
-                cursor.execute(query, ('%' + search_query + '%',))
-            observations_data = cursor.fetchall()
-
-            if observations_data:
+            obs_data = search_observation(cursor, search_query)
+            if obs_data:
                 st.write("### Search Results:")
-                for observation in observations_data:
-                    st.write(f"Observation ID: {observation[0]}, Observation Location: {observation[1]}")
+                for ob in obs_data:
+                    st.write(f"Observation ID: {ob[0]}, Observation date: {ob[1]}, Observation location: {ob[2]}, Species ID: {ob[3]}, Data ID: {ob[4]}")
             else:
-                st.write("No observations found matching the search query.")
+                st.write("No Observation found matching the search query.")
 
         menu = st.sidebar.radio("Menu", ["Display Observations", "Insert Observation", "Delete Observation",
                                          "Update Observation Location"])
@@ -201,20 +182,13 @@ def home_page():
 
     elif dashboard_option == ("Environmental_data"):
         st.title("Environmental Data")
-        search_query = st.text_input("Search by Data ID")
+        search_query = st.text_input("Search by Data ID or Wildlife Preserve ID")
         if st.button("Search"):
-            if search_query.isdigit():
-                query = "SELECT * FROM ENVIRONMENTAL_DATA WHERE D_ID = %s"
-                cursor.execute(query, (int(search_query),))
-            else:
-                query = "SELECT * FROM ENVIRONMENTAL_DATA WHERE WATER_QUAL LIKE %s"
-                cursor.execute(query, ('%' + search_query + '%',))
-            environmental_data = cursor.fetchall()
-
-            if environmental_data:
+            e_data = search_Environmental_data(cursor, search_query)
+            if e_data:
                 st.write("### Search Results:")
-                for data in environmental_data:
-                    st.write(f"Data ID: {data[0]}, Water Quality: {data[1]}")
+                for data in e_data:
+                    st.write(f"Data ID: {data[0]}, Water Quality: {data[1]}, Weather condition: {data[2]}, Soil Quality: {data[3]}, Air Quality: {data[4]},Wildlife preserve ID: {data[5]}")
             else:
                 st.write("No environmental data found matching the search query.")
         menu = st.sidebar.radio("Menu",["Display Environmental Data", "Insert Environmental Data", "Delete Environmental Data",
@@ -233,32 +207,23 @@ def home_page():
         db.close()
     elif dashboard_option == "Protected By":
         st.title("Protected By")
-        search_query = st.text_input("Search by Species ID or Conservation ID")
+        search_query = st.text_input("Search by Project ID or Species ID")
         if st.button("Search"):
-            if search_query.isdigit():
-                query = "SELECT * FROM PROTECTED_BY WHERE SP_ID = %s"
-                cursor.execute(query, (int(search_query),))
+            protected_data = search_protected(cursor, search_query)
+            if protected_data is not None:
+                if protected_data:
+                    st.write("### Search Results:")
+                    for data in protected_data:
+                        st.write(f"Species ID: {data[1]}, Conservation Status: {data[0]}, Project ID: {data[2]}")
+                else:
+                    st.write("No protected data found matching the search query.")
             else:
-                query = "SELECT * FROM PROTECTED_BY WHERE CONSERVATION_STATUS LIKE %s"
-                cursor.execute(query, ('%' + search_query + '%',))
-            protected_data = cursor.fetchall()
+                st.write("Please provide a valid search query.")
 
-            if protected_data:
-                st.write("### Search Results:")
-                for data in protected_data:
-                    st.write(f"Species ID: {data[1]}, Conservation Status: {data[0]}, Project ID: {data[2]}")
-            else:
-                st.write("No protected data found matching the search query.")
-
-        menu = st.sidebar.radio("Menu", ["Display Protected By", "Insert Protected By", "Delete Protected By"])
+        menu = st.sidebar.radio("Menu", ["Display Protected By"])
 
         if menu == "Display Protected By":
             display_protected_by(cursor)
-        elif menu == "Insert Protected By":
-            insert_protected_by(db, cursor)
-        elif menu == "Delete Protected By":
-            delete_protected_by(db, cursor)
-
         cursor.close()
         db.close()
 
