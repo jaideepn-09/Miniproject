@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from database import establish_connection
@@ -7,63 +8,6 @@ from datetime import datetime, timedelta
 def homepage(db):
     st.title("Home Page")
     st.write("Welcome to the homepage!")
-
-# def search_all(cursor, search_query):
-#     # Search in OBSERVATIONS table
-#     query = "SELECT * FROM OBSERVATIONS WHERE OB_ID = %s OR OB_LOC LIKE %s"
-#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
-#     observation_data = cursor.fetchall()
-#
-#     # Search in SPECIES table
-#     query = "SELECT * FROM SPECIES WHERE SP_ID = %s OR SP_NAME LIKE %s OR SP_CLASSIFICATION LIKE %s"
-#     cursor.execute(query, (int(search_query), '%' + search_query + '%', '%' + search_query + '%'))
-#     species_data = cursor.fetchall()
-#
-#     # Search in CONSERVATION_PLAN table
-#     query = "SELECT * FROM CONSERVATION_PLAN WHERE PROJ_ID = %s OR PROJ_NAME LIKE %s"
-#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
-#     conservation_projects_data = cursor.fetchall()
-#
-#     # Search in HABITATS table
-#     query = "SELECT * FROM SPECIES_PRESERVES WHERE PID = %s OR PNAME LIKE %s"
-#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
-#     habitat_data = cursor.fetchall()
-#
-#     # Search in ENVIRONMENTAL_DATA table
-#     query = "SELECT * FROM ENVIRONMENTAL_DATA WHERE D_ID = %s OR WATER_QUAL LIKE %s"
-#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
-#     environmental_data = cursor.fetchall()
-#
-#     # Search in PROTECTED_BY table
-#     query = "SELECT * FROM PROTECTED_BY WHERE SP_ID = %s OR CONSERVATION_STATUS LIKE %s"
-#     cursor.execute(query, (int(search_query), '%' + search_query + '%'))
-#     protected_data = cursor.fetchall()
-#
-#     # Combine all search results
-#     all_results = {
-#         "Observations": observation_data,
-#         "Species": species_data,
-#         "Conservation Projects": conservation_projects_data,
-#         "Habitats": habitat_data,
-#         "Environmental Data": environmental_data,
-#         "Protected Data": protected_data
-#     }
-#
-#     return all_results
-#
-#
-# def search_across_all(cursor):
-#     search_query = st.text_input("Search across all data:")
-#     if st.button("Search"):
-#         search_results = search_all(cursor, search_query)
-#
-#         for table_name, data in search_results.items():
-#             if data:
-#                 st.write(f"### Search Results in {table_name}:")
-#                 for row in data:
-#                     st.write(row)
-#             else:
-#                 st.write(f"No results found in {table_name}.")
 def display_user_profile(cursor, user_id):
     st.subheader("User Profile Details:")
     if user_id:
@@ -106,13 +50,11 @@ def display_species(cursor):
     specieses = cursor.fetchall()
 
     if specieses:
-        st.write("### Observations")
-        for species in specieses:
-            st.write(
-                f"Species ID: {species[0]}, Species name: {species[1]}, Classification: {species[2]}")
+        st.write("### Species Table")
+        df = pd.DataFrame(specieses, columns=["Species ID", "Species Name", "Classification"])
+        st.table(df)
     else:
         st.write("No Species found.")
-
 
 def search_species(cursor, search_query):
     if search_query:
@@ -144,7 +86,6 @@ def insert_species(db, cursor):
         except Exception as e:
             st.error(f"Failed to add Species: {e}")
             db.rollback()
-
 
 def delete_species(db, cursor):
     st.title("Delete Species")
@@ -189,13 +130,12 @@ def display_Habitats(cursor):
     st.title("Display Wildlife Preserve")
     query = "SELECT * FROM SPECIES_PRESERVES"
     cursor.execute(query)
-    Habitats = cursor.fetchall()
+    habitats = cursor.fetchall()
 
-    if Habitats:
+    if habitats:
         st.write("### WILDLIFE PRESERVE")
-        for Habitat in Habitats:
-            st.write(
-                f"PID: {Habitat[0]}, PNAME: {Habitat[1]}, PLOC: {Habitat[2]}, PECOSYSTEM: {Habitat[3]}, SP_ID: {Habitat[4]}")
+        df = pd.DataFrame(habitats, columns=["PID", "PNAME", "PLOC", "PECOSYSTEM", "SP_ID"])
+        st.table(df)
     else:
         st.write("No Wildlife Preserve found.")
 
@@ -276,11 +216,11 @@ def display_cons(cursor):
 
     if conserves:
         st.write("### Conservation Projects")
-        for conserve in conserves:
-            st.write(
-                f"Project ID: {conserve[0]}, Project name: {conserve[1]}, Start_date: {conserve[2]}, End_date: {conserve[3]}, SP_ID: {conserve[4]}")
+        df = pd.DataFrame(conserves, columns=["Project ID", "Project Name", "Start Date", "End Date", "SP ID"])
+        st.table(df)
     else:
         st.write("No Conservation Project found.")
+
 
 
 def search_cons(cursor, search_query):
@@ -361,14 +301,13 @@ def display_observations(cursor):
     query = "SELECT * FROM OBSERVATIONS"
     cursor.execute(query)
     observations = cursor.fetchall()
-
     if observations:
         st.write("### Observations")
-        for observation in observations:
-            st.write(
-                f"ID: {observation[0]}, Date: {observation[1]}, Location: {observation[2]}, Species ID: {observation[3]}, Data ID: {observation[4]}")
+        df = pd.DataFrame(observations, columns=["ID", "Date", "Location", "Species ID", "Data ID"])
+        st.table(df)
     else:
         st.write("No observations found.")
+
 
 
 def search_observation(cursor, search_query):
@@ -447,11 +386,11 @@ def display_data(cursor):
 
     if environmental_data:
         st.write("### ENVIRONMENTAL DATA")
-        for data in environmental_data:
-            st.write(
-                f"D_ID: {data[0]}, WATER_QUAL: {data[1]}, WEATHER_COND: {data[2]}, SOIL_COMP: {data[3]}, AIR_QUAL: {data[4]}, PID: {data[5]}")
+        df = pd.DataFrame(environmental_data, columns=["D_ID", "Water Quality", "Weather Condition", "Soil Composition", "Air Quality", "PID"])
+        st.table(df)
     else:
         st.write("No environmental data found.")
+
 
 
 def search_Environmental_data(cursor, search_query):
@@ -488,24 +427,22 @@ def insert_data(db, cursor):
             st.error(f"Failed to add environmental data: {e}")
             db.rollback()
 
-
-def delete_data(db, cursor):
-    st.title("Delete Environmental Data")
-    d_id = st.text_input("Enter Data ID to delete")
-
-    if st.button("Delete"):
-        query = "DELETE FROM ENVIRONMENTAL_DATA WHERE D_ID = %s"
-        try:
-            cursor.execute(query, (d_id,))
-            db.commit()
-            if cursor.rowcount > 0:
-                st.success("Environmental Data deleted successfully!")
-            else:
-                st.warning("Environmental Data not found.")
-        except Exception as e:
-            st.error(f"Failed to delete Environmental Data: {e}")
-            db.rollback()
-
+# def delete_data(db, cursor):
+#     st.title("Delete Environmental Data")
+#     d_id = st.text_input("Enter Data ID to delete")
+#
+#     if st.button("Delete"):
+#         query = "DELETE FROM ENVIRONMENTAL_DATA WHERE D_ID = %s"
+#         try:
+#             cursor.execute(query, (d_id,))
+#             db.commit()
+#             if cursor.rowcount > 0:
+#                 st.success("Environmental Data deleted successfully!")
+#             else:
+#                 st.warning("Environmental Data not found.")
+#         except Exception as e:
+#             st.error(f"Failed to delete Environmental Data: {e}")
+#             db.rollback()
 
 def update_data(db, cursor):
     st.title("Update Environmental Data")
@@ -541,10 +478,11 @@ def display_protected_by(cursor):
 
     if protected_data:
         st.write("### Protected By Data")
-        for data in protected_data:
-            st.write(f"Species ID: {data[1]}, Conservation Status: {data[0]}, Project ID: {data[2]}")
+        df = pd.DataFrame(protected_data, columns=["Conservation Status", "Species ID", "Project ID"])
+        st.table(df)
     else:
         st.write("No protected data found.")
+
 def search_protected(cursor, search_query):
     if search_query:
         if search_query.startswith("SP"):

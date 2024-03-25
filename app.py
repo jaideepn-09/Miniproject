@@ -1,34 +1,35 @@
 import streamlit as st
 import mysql.connector
+import base64
 
-from database import establish_connection
 from home import display_observations, insert_observation, delete_observation, update_observation_location, \
     display_species, insert_species, delete_species, update_species, display_cons, insert_cons, delete_cons, \
     display_Habitats, insert_Habitats, delete_Habitats, update_Habitats, display_data, \
-    insert_data, delete_data, update_data, display_protected_by, \
+    insert_data, update_data, display_protected_by, \
     search_species, search_habitats, search_cons, search_observation, search_Environmental_data, search_protected, \
     update_cons \
 
 db = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="#",
-    database="#"
+    password="Admiraljai_69",
+    database="park"
 )
 cursor = db.cursor()
 
-def set_bg_hack_url():
-    st.markdown(
-        f"""
-         <style>
-         .stApp {{
-             background: url("https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.wwf.fr%2Fvous-informer%2Feffet-panda%2Fune-nouvelle-arme-au-service-de-la-nature&psig=AOvVaw2jM7Pj_eGa-gaRTmUS4pHq&ust=1711184995337000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCKj44IHDh4UDFQAAAAAdAAAAABAJ");
-             background-size: cover
-         }}
-         </style>
-         """,
-        unsafe_allow_html=True
-    )
+with open("Background.jpeg", "rb") as image_file:
+    encoded_string = base64.b64encode(image_file.read()).decode()
+
+bg_img = f'''
+<style>
+    [data-testid="stAppViewContainer"] {{
+        background-image: url('data:image/jpeg;base64,{encoded_string}');
+        background-size: cover;
+        background-repeat: no-repeat;
+    }}
+</style>
+'''
+st.markdown(bg_img, unsafe_allow_html=True)
 def login(cursor):
     with st.expander("Login", expanded=True):
         login_identifier = st.text_input("Username or Email 📧")
@@ -191,18 +192,15 @@ def home_page():
                     st.write(f"Data ID: {data[0]}, Water Quality: {data[1]}, Weather condition: {data[2]}, Soil Quality: {data[3]}, Air Quality: {data[4]},Wildlife preserve ID: {data[5]}")
             else:
                 st.write("No environmental data found matching the search query.")
-        menu = st.sidebar.radio("Menu",["Display Environmental Data", "Insert Environmental Data", "Delete Environmental Data",
+        menu = st.sidebar.radio("Menu",["Display Environmental Data", "Insert Environmental Data",
                                   "Update Environmental Data"])
 
         if menu == "Display Environmental Data":
             display_data(cursor)
         elif menu == "Insert Environmental Data":
             insert_data(db, cursor)
-        elif menu == "Delete Environmental Data":
-            delete_data(db, cursor)
         elif menu == "Update Environmental Data":
             update_data(db, cursor)
-
         cursor.close()
         db.close()
     elif dashboard_option == "Protected By":
@@ -234,11 +232,11 @@ def main():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
     if st.session_state["logged_in"]:
-        if st.button('Logout', key='logout'):
+        if st.sidebar.button('Logout', key='logout'):
             st.session_state["logged_in"] = False
             st.experimental_rerun()
-        st.write("You are logged in!")  # Add a debug statement to check if this is executed
-        home_page()  # Check if home page content is called when logged in
+        st.write("You are logged in!")
+        home_page()
     else:
         action = st.radio("Choose an option:", ["Login", "Sign Up"])
 
